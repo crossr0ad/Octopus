@@ -85,16 +85,7 @@ void glcdCLS() {
     setAddress(0, 0);
 }
 
-unsigned char buff[8][128];
-
-// initBuffer: initilize buffer to zero
-void initBuffer() {
-    for (int r = 0; r < 8; r++) {
-        for (int c = 0; c < 128; c++) {
-            buff[r][c] = 0;
-        }
-    }
-}
+unsigned char buff[8][128] = {0};
 
 // dot: put a dot on a display
 void dot(int x, int y) {
@@ -535,7 +526,6 @@ void setup() {
     Serial.begin(9600);
     randomSeed(analogRead(4));
 
-    initBuffer();
     isBlack = true;
     // putStr("hello, Nishioka!",10,10);
     putCell(octbodyU, 50, -5);
