@@ -197,7 +197,7 @@ void putStr(char ch[], int x, int y) {
     }
 }
 
-void oct(int i, int j, bool isisBlack) {
+void octopus(int i, int j, bool isisBlack) {
     bool temp = isBlack;
     isBlack = isisBlack;
     switch (i) {
@@ -278,10 +278,10 @@ void oct(int i, int j, bool isisBlack) {
     /*putCell(octfoot42, 108, 42); ERASED*/
 }
 
-void octInit(bool temp) {
+void initOctopus(bool temp) {
     for (int j = 0; j < 4; j++) {
         for (int k = 0; k < 5; k++) {
-            oct(j, k, temp);
+            octopus(j, k, temp);
         }
     }
 }
@@ -294,7 +294,7 @@ void _random() {
     long OF[4] = {random(4), random(5), random(4), 1};
     for (i = 0; i <= 3; i++) {
         for (j = 0; j <= OF[i]; j++) {
-            oct(i, j, true);
+            octopus(i, j, true);
         }
         footlocate[i] = OF[i];
     }
@@ -317,10 +317,10 @@ void moveOct(int i) {
             break;
     }
     if (isExtend[i]) {
-        oct(i, footlocate[i] + 1, true);
+        octopus(i, footlocate[i] + 1, true);
         footlocate[i]++;
     } else {
-        oct(i, footlocate[i], false);
+        octopus(i, footlocate[i], false);
         footlocate[i]--;
     }
     if (footlocate[i] == temp || footlocate[i] == -1) {
@@ -392,15 +392,15 @@ void capture() {
     man(5, false);
     man(6, false);
     man(7, false);
-    oct(1, 0, true);
-    oct(1, 1, true);
-    oct(1, 2, false);
-    oct(1, 3, false);
-    oct(1, 4, false);
-    oct(2, 0, true);
-    oct(2, 1, true);
-    oct(2, 2, false);
-    oct(2, 3, false);
+    octopus(1, 0, true);
+    octopus(1, 1, true);
+    octopus(1, 2, false);
+    octopus(1, 3, false);
+    octopus(1, 4, false);
+    octopus(2, 0, true);
+    octopus(2, 1, true);
+    octopus(2, 2, false);
+    octopus(2, 3, false);
     isBlack = false;
     fillRect(109, 0, 19, 9);
     isBlack = true;
@@ -531,7 +531,7 @@ void setup() {
     fillRect(109, 0, 19, 9);
     isBlack = true;
 
-    // octInit(true);
+    // initOctopus(true);
     man(manLocate, true);
     count = 1;
     display();
