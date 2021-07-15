@@ -51,6 +51,7 @@ void setAddress(byte col, byte row) {
     writeBUS(0, 0, 0xB8 | (row & 0x07));
 }
 
+// initialize glaphic LCD (GLCD)
 void initGlcd(void) {
     pinMode(pins_RS, OUTPUT);
     pinMode(pins_RW, OUTPUT);
@@ -63,8 +64,8 @@ void initGlcd(void) {
     }
     delay(30);
     selectChip(0);
-    writeCommand(0xC0);
-    writeCommand(0x3F);
+    writeCommand(0xC0);  // 1100 0000
+    writeCommand(0x3F);  // 0011 1111
     selectChip(1);
     writeCommand(0xC0);  // 1100 0000
     writeCommand(0x3F);  // 0011 1111
@@ -86,6 +87,7 @@ void glcdCLS() {
 
 unsigned char buff[8][128];
 
+// initBuffer: initilize buffer to zero
 void initBuffer() {
     for (int r = 0; r < 8; r++) {
         for (int c = 0; c < 128; c++) {
@@ -94,6 +96,7 @@ void initBuffer() {
     }
 }
 
+// dot: put a dot on a display
 void dot(int x, int y) {
     if (x > 127 || x < 0 || y > 63 || y < 0) return;
     int c_x = y / 8;
@@ -106,6 +109,7 @@ void dot(int x, int y) {
     }
 }
 
+// send the buffer to display
 void display() {
     selectChip(0);
     for (int i = 0; i < 8; i++) {
@@ -123,6 +127,7 @@ void display() {
     }
 }
 
+// line: draw a straight line
 void line(int x, int y, int len, bool sv) {  /// sv=1…よこ,0…たて
     if (sv) {
         for (int i = 0; i < len; i++) {
@@ -135,6 +140,7 @@ void line(int x, int y, int len, bool sv) {  /// sv=1…よこ,0…たて
     }
 }
 
+// rect: draw a rectangle
 void rect(int x, int y, int width, int height) {
     line(x, y, width, 1);
     line(x, y, height, 0);
@@ -143,6 +149,7 @@ void rect(int x, int y, int width, int height) {
     dot(x + width, y + height);
 }
 
+// fillRect: draw a filled rectangle
 void fillRect(int x, int y, int width, int height) {
     for (int i = 0; i < width; i++) {
         for (int j = 0; j < height; j++) {
@@ -151,6 +158,7 @@ void fillRect(int x, int y, int width, int height) {
     }
 }
 
+// putCell: takes array of various type as input and write it to buffer
 #define putCell(img, x, y)                           \
     {                                                \
         int height = sizeof(img[0]) * 8;             \
@@ -387,6 +395,7 @@ void movePlayer(bool isRight) {
     }
 }
 
+// capture: show player captured by octopus
 void capture() {
     player(manLocate, false);
     player(5, false);
