@@ -189,15 +189,15 @@ void fillRect(int x, int y, int width, int height) {
         }                                            \
     }
 
-void putCh(int ch, int x, int y) { putCell(Font[ch - ' '], x, y); }
+void putChar(int ch, int x, int y) { putCell(Font[ch - ' '], x, y); }
 
 void putStr(char ch[], int x, int y) {
     for (int i = 0; ch[i] != '\0'; i++) {
-        putCh(ch[i], x + i * 6, y);
+        putChar(ch[i], x + i * 6, y);
     }
 }
 
-void oct(int i, int j, bool isisBlack) {
+void octopus(int i, int j, bool isisBlack) {
     bool temp = isBlack;
     isBlack = isisBlack;
     switch (i) {
@@ -278,10 +278,10 @@ void oct(int i, int j, bool isisBlack) {
     /*putCell(octfoot42, 108, 42); ERASED*/
 }
 
-void octInit(bool temp) {
+void initOctopus(bool temp) {
     for (int j = 0; j < 4; j++) {
         for (int k = 0; k < 5; k++) {
-            oct(j, k, temp);
+            octopus(j, k, temp);
         }
     }
 }
@@ -294,7 +294,7 @@ void _random() {
     long OF[4] = {random(4), random(5), random(4), 1};
     for (i = 0; i <= 3; i++) {
         for (j = 0; j <= OF[i]; j++) {
-            oct(i, j, true);
+            octopus(i, j, true);
         }
         footlocate[i] = OF[i];
     }
@@ -317,10 +317,10 @@ void moveOct(int i) {
             break;
     }
     if (isExtend[i]) {
-        oct(i, footlocate[i] + 1, true);
+        octopus(i, footlocate[i] + 1, true);
         footlocate[i]++;
     } else {
-        oct(i, footlocate[i], false);
+        octopus(i, footlocate[i], false);
         footlocate[i]--;
     }
     if (footlocate[i] == temp || footlocate[i] == -1) {
@@ -328,7 +328,7 @@ void moveOct(int i) {
     }
 }
 
-void man(int i, bool isisBlack) {
+void player(int i, bool isisBlack) {
     bool temp = isBlack;
     isBlack = isisBlack;
     switch (i) {
@@ -373,14 +373,14 @@ void movePlayer(bool isRight) {
         i = isRight ? 1 : -1;
 
         if (manLocate == 3 && isRight) {
-            man(5, true);
+            player(5, true);
         } else if (manLocate == 4 && !isRight) {
-            man(5, false);
-            man(6, false);
-            man(7, false);
+            player(5, false);
+            player(6, false);
+            player(7, false);
         }
-        man(manLocate, false);
-        man(manLocate + i, true);
+        player(manLocate, false);
+        player(manLocate + i, true);
 
         manLocate += i;
         tone(18, 523, 30);
@@ -388,19 +388,19 @@ void movePlayer(bool isRight) {
 }
 
 void capture() {
-    man(manLocate, false);
-    man(5, false);
-    man(6, false);
-    man(7, false);
-    oct(1, 0, true);
-    oct(1, 1, true);
-    oct(1, 2, false);
-    oct(1, 3, false);
-    oct(1, 4, false);
-    oct(2, 0, true);
-    oct(2, 1, true);
-    oct(2, 2, false);
-    oct(2, 3, false);
+    player(manLocate, false);
+    player(5, false);
+    player(6, false);
+    player(7, false);
+    octopus(1, 0, true);
+    octopus(1, 1, true);
+    octopus(1, 2, false);
+    octopus(1, 3, false);
+    octopus(1, 4, false);
+    octopus(2, 0, true);
+    octopus(2, 1, true);
+    octopus(2, 2, false);
+    octopus(2, 3, false);
     isBlack = false;
     fillRect(109, 0, 19, 9);
     isBlack = true;
@@ -531,8 +531,8 @@ void setup() {
     fillRect(109, 0, 19, 9);
     isBlack = true;
 
-    // octInit(true);
-    man(manLocate, true);
+    // initOctopus(true);
+    player(manLocate, true);
     count = 1;
     display();
 
@@ -581,19 +581,19 @@ void loop() {
         }
         if (nishioCount >= 1 && time / man4interval != nishiokaNum) {
             if (nishioCount == 1) {
-                man(6, false);
-                man(5, true);
+                player(6, false);
+                player(5, true);
                 nishioCount++;
                 nishiokaNum = millis() / man4interval;
             } else if (nishioCount == 2) {
-                man(5, false);
-                man(7, true);
+                player(5, false);
+                player(7, true);
                 score++;
                 nishioCount++;
                 nishiokaNum = millis() / man4interval;
             } else if (nishioCount == 3) {
-                man(5, true);
-                man(7, false);
+                player(5, true);
+                player(7, false);
                 nishioCount = 0;
                 tone(18, 784, 30);
                 delay(100);
@@ -604,8 +604,8 @@ void loop() {
         } else if (!digitalRead(17) && nishioCount == 0) {
             if (situation == 0) {
                 if (manLocate == 4) {
-                    man(5, false);
-                    man(6, true);
+                    player(5, false);
+                    player(6, true);
                     nishioCount = 1;
                     nishiokaNum = millis() / man4interval;
                 } else {
