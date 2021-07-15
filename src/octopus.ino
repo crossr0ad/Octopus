@@ -2,11 +2,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "Font.h"
-#include "Haikei.h"
-#include "Man.h"
-#include "Octbody.h"
-#include "Octfoot.h"
+#include "background.h"
+#include "font.h"
+#include "octopus_body.h"
+#include "octopus_legs.h"
+#include "player.h"
 
 byte pins_DB[] = {14, 15, 2, 3, 4, 5, 6, 7};
 
