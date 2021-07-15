@@ -32,6 +32,7 @@ void selectChip(boolean cs) {
         digitalWrite(pins_CS2, HIGH);
     }
 }
+
 void writeBUS(boolean rs, boolean rw, byte dat) {
     digitalWrite(pins_RS, rs);
     for (int i = 0; i < 8; i++) {  //
@@ -40,12 +41,16 @@ void writeBUS(boolean rs, boolean rw, byte dat) {
     digitalWrite(pins_E, HIGH);
     digitalWrite(pins_E, LOW);
 }
+
 void writeCommand(byte dat) { writeBUS(0, 0, dat); }
+
 void writeData(byte dat) { writeBUS(1, 0, dat); }
+
 void setAddress(byte col, byte row) {
     writeBUS(0, 0, 0x40 | (col & 0x3F));
     writeBUS(0, 0, 0xB8 | (row & 0x07));
 }
+
 void initGlcd(void) {
     pinMode(pins_RS, OUTPUT);
     pinMode(pins_RW, OUTPUT);
@@ -53,7 +58,9 @@ void initGlcd(void) {
     pinMode(pins_CS1, OUTPUT);
     pinMode(pins_CS2, OUTPUT);
     pinMode(pins_RST, OUTPUT);
-    for (int i = 0; i < 8; i++) pinMode(pins_DB[i], OUTPUT);
+    for (int i = 0; i < 8; i++) {
+        pinMode(pins_DB[i], OUTPUT);
+    }
     delay(30);
     selectChip(0);
     writeCommand(0xC0);
@@ -62,6 +69,7 @@ void initGlcd(void) {
     writeCommand(0xC0);  // 1100 0000
     writeCommand(0x3F);  // 0011 1111
 }
+
 void glcdCLS() {
     byte col, row, i;
     for (i = 0; i < 2; i++) {
@@ -79,20 +87,25 @@ void glcdCLS() {
 unsigned char buff[8][128];
 
 void initBuffer() {
-    for (int r = 0; r < 8; r++)
-        for (int c = 0; c < 128; c++) buff[r][c] = 0;
+    for (int r = 0; r < 8; r++) {
+        for (int c = 0; c < 128; c++) {
+            buff[r][c] = 0;
+        }
+    }
 }
+
 void dot(int x, int y) {
     if (x > 127 || x < 0 || y > 63 || y < 0) return;
     int c_x = y / 8;
-    int c_z = 0;
-    c_z = 0x01 << (y % 8);
+    int c_z = 0x01 << (y % 8);
 
-    if (isBlack)
+    if (isBlack) {
         buff[c_x][x] |= c_z;
-    else
+    } else {
         buff[c_x][x] &= ~c_z;
+    }
 }
+
 void display() {
     selectChip(0);
     for (int i = 0; i < 8; i++) {
@@ -109,12 +122,19 @@ void display() {
         }
     }
 }
+
 void line(int x, int y, int len, bool sv) {  /// sv=1…よこ,0…たて
-    if (sv)
-        for (int i = 0; i < len; i++) dot(x + i, y);
-    else
-        for (int i = 0; i < len; i++) dot(x, y + i);
+    if (sv) {
+        for (int i = 0; i < len; i++) {
+            dot(x + i, y);
+        }
+    } else {
+        for (int i = 0; i < len; i++) {
+            dot(x, y + i);
+        }
+    }
 }
+
 void rect(int x, int y, int width, int height) {
     line(x, y, width, 1);
     line(x, y, height, 0);
@@ -122,6 +142,7 @@ void rect(int x, int y, int width, int height) {
     line(x + width, y, height, 0);
     dot(x + width, y + height);
 }
+
 void fillRect(int x, int y, int width, int height) {
     for (int i = 0; i < width; i++) {
         for (int j = 0; j < height; j++) {
@@ -129,6 +150,7 @@ void fillRect(int x, int y, int width, int height) {
         }
     }
 }
+
 #define putCell(img, x, y)                           \
     {                                                \
         int height = sizeof(img[0]) * 8;             \
@@ -168,6 +190,7 @@ void fillRect(int x, int y, int width, int height) {
     }
 
 void putCh(int ch, int x, int y) { putCell(Font[ch - ' '], x, y); }
+
 void putStr(char ch[], int x, int y) {
     for (int i = 0; ch[i] != '\0'; i++) {
         putCh(ch[i], x + i * 6, y);
@@ -256,8 +279,11 @@ void oct(int i, int j, bool isisBlack) {
 }
 
 void octInit(bool temp) {
-    for (int j = 0; j < 4; j++)
-        for (int k = 0; k < 5; k++) oct(j, k, temp);
+    for (int j = 0; j < 4; j++) {
+        for (int k = 0; k < 5; k++) {
+            oct(j, k, temp);
+        }
+    }
 }
 
 const int footlocateMax[] = {3, 4, 3, 1};
@@ -273,6 +299,7 @@ void _random() {
         footlocate[i] = OF[i];
     }
 }
+
 void moveOct(int i) {
     int temp;
     switch (i) {
@@ -343,10 +370,7 @@ void man(int i, bool isisBlack) {
 void movePlayer(bool isRight) {
     int i;
     if (manLocate != 0 || isRight) {
-        if (isRight)
-            i = 1;
-        else
-            i = -1;
+        i = isRight ? 1 : -1;
 
         if (manLocate == 3 && isRight) {
             man(5, true);
@@ -518,6 +542,7 @@ void setup() {
     noTone(18);
     tone(18, 1047, 30);
 }
+
 void loop() {
     interval = 800 - score * 10;
     time = millis();
@@ -531,10 +556,11 @@ void loop() {
 
     Serial.println(scoreStr);
 
-    if (digitalRead(16) || digitalRead(17))
+    if (digitalRead(16) || digitalRead(17)) {
         digitalWrite(LED_BUILTIN, LOW);
-    else
+    } else {
         digitalWrite(LED_BUILTIN, HIGH);
+    }
     if (isCaptured) {
         if (!isGO) {
             gameOver();
@@ -582,8 +608,9 @@ void loop() {
                     man(6, true);
                     nishioCount = 1;
                     nishiokaNum = millis() / man4interval;
-                } else
+                } else {
                     movePlayer(true);
+                }
                 situation = 2;
             }
         } else if (!digitalRead(16) && situation == 0) {
