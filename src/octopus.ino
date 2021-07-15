@@ -8,8 +8,6 @@
 #include "octopus_legs.h"
 #include "player.h"
 
-byte pins_DB[] = {14, 15, 2, 3, 4, 5, 6, 7};
-
 #define pins_RS 10
 #define pins_RW 9
 #define pins_E 8
@@ -17,11 +15,13 @@ byte pins_DB[] = {14, 15, 2, 3, 4, 5, 6, 7};
 #define pins_CS2 12
 #define pins_RST 13
 
+const byte pins_DB[] = {14, 15, 2, 3, 4, 5, 6, 7};
+
 bool isBlack;
 bool isExtend[] = {false, false, false, false};
 
-int score = 0,      /// スコア
-    manLocate = 0;  /// PCの位置（0~4）
+unsigned int score = 0;
+unsigned int playerLocation = 0;  // location of the player from 0 to 4
 
 void selectChip(boolean cs) {
     if (cs == 0) {
@@ -33,7 +33,7 @@ void selectChip(boolean cs) {
     }
 }
 
-void writeBUS(boolean rs, boolean rw, byte dat) {
+void writeBUS(boolean rs, /*boolean rw,*/ byte dat) {
     digitalWrite(pins_RS, rs);
     for (int i = 0; i < 8; i++) {  //
         digitalWrite(pins_DB[i], (dat >> i) & 0x01);
@@ -42,15 +42,16 @@ void writeBUS(boolean rs, boolean rw, byte dat) {
     digitalWrite(pins_E, LOW);
 }
 
-void writeCommand(byte dat) { writeBUS(0, 0, dat); }
+void writeCommand(byte dat) { writeBUS(0, dat); }
 
-void writeData(byte dat) { writeBUS(1, 0, dat); }
+void writeData(byte dat) { writeBUS(1, dat); }
 
 void setAddress(byte col, byte row) {
-    writeBUS(0, 0, 0x40 | (col & 0x3F));
-    writeBUS(0, 0, 0xB8 | (row & 0x07));
+    writeBUS(0, 0x40 | (col & 0x3F));
+    writeBUS(0, 0xB8 | (row & 0x07));
 }
 
+// initialize glaphic LCD (GLCD)
 void initGlcd(void) {
     pinMode(pins_RS, OUTPUT);
     pinMode(pins_RW, OUTPUT);
@@ -63,8 +64,8 @@ void initGlcd(void) {
     }
     delay(30);
     selectChip(0);
-    writeCommand(0xC0);
-    writeCommand(0x3F);
+    writeCommand(0xC0);  // 1100 0000
+    writeCommand(0x3F);  // 0011 1111
     selectChip(1);
     writeCommand(0xC0);  // 1100 0000
     writeCommand(0x3F);  // 0011 1111
@@ -86,6 +87,7 @@ void glcdCLS() {
 
 unsigned char buff[8][128];
 
+// initBuffer: initilize buffer to zero
 void initBuffer() {
     for (int r = 0; r < 8; r++) {
         for (int c = 0; c < 128; c++) {
@@ -94,6 +96,7 @@ void initBuffer() {
     }
 }
 
+// dot: put a dot on a display
 void dot(int x, int y) {
     if (x > 127 || x < 0 || y > 63 || y < 0) return;
     int c_x = y / 8;
@@ -106,6 +109,7 @@ void dot(int x, int y) {
     }
 }
 
+// send the buffer to display
 void display() {
     selectChip(0);
     for (int i = 0; i < 8; i++) {
@@ -123,6 +127,7 @@ void display() {
     }
 }
 
+// line: draw a straight line
 void line(int x, int y, int len, bool sv) {  /// sv=1…よこ,0…たて
     if (sv) {
         for (int i = 0; i < len; i++) {
@@ -135,6 +140,7 @@ void line(int x, int y, int len, bool sv) {  /// sv=1…よこ,0…たて
     }
 }
 
+// rect: draw a rectangle
 void rect(int x, int y, int width, int height) {
     line(x, y, width, 1);
     line(x, y, height, 0);
@@ -143,6 +149,7 @@ void rect(int x, int y, int width, int height) {
     dot(x + width, y + height);
 }
 
+// fillRect: draw a filled rectangle
 void fillRect(int x, int y, int width, int height) {
     for (int i = 0; i < width; i++) {
         for (int j = 0; j < height; j++) {
@@ -151,6 +158,7 @@ void fillRect(int x, int y, int width, int height) {
     }
 }
 
+// putCell: takes array of various type as input and write it to buffer
 #define putCell(img, x, y)                           \
     {                                                \
         int height = sizeof(img[0]) * 8;             \
@@ -189,11 +197,11 @@ void fillRect(int x, int y, int width, int height) {
         }                                            \
     }
 
-void putCh(int ch, int x, int y) { putCell(Font[ch - ' '], x, y); }
+void putChar(int ch, int x, int y) { putCell(Font[ch - ' '], x, y); }
 
 void putStr(char ch[], int x, int y) {
     for (int i = 0; ch[i] != '\0'; i++) {
-        putCh(ch[i], x + i * 6, y);
+        putChar(ch[i], x + i * 6, y);
     }
 }
 
@@ -328,10 +336,10 @@ void moveOct(int i) {
     }
 }
 
-void man(int i, bool isisBlack) {
+void player(int location, bool isisBlack) {
     bool temp = isBlack;
     isBlack = isisBlack;
-    switch (i) {
+    switch (location) {
         case 0:
             putCell(Man1, 2, 3);
             putCell(ManHukuro1, 22, 14);
@@ -368,30 +376,33 @@ void man(int i, bool isisBlack) {
 }
 
 void movePlayer(bool isRight) {
-    int i;
-    if (manLocate != 0 || isRight) {
-        i = isRight ? 1 : -1;
-
-        if (manLocate == 3 && isRight) {
-            man(5, true);
-        } else if (manLocate == 4 && !isRight) {
-            man(5, false);
-            man(6, false);
-            man(7, false);
-        }
-        man(manLocate, false);
-        man(manLocate + i, true);
-
-        manLocate += i;
-        tone(18, 523, 30);
+    if (playerLocation == 0 && !isRight) {
+        return;
     }
+
+    if (playerLocation == 3 && isRight) {
+        player(5, true);
+    } else if (playerLocation == 4 && !isRight) {
+        player(5, false);
+        player(6, false);
+        player(7, false);
+    }
+
+    int i = isRight ? 1 : -1;
+    player(playerLocation, false);
+    player(playerLocation + i, true);
+
+    playerLocation += i;
+    tone(18, 523, 30);
 }
 
+// capture: show player captured by octopus
 void capture() {
-    man(manLocate, false);
-    man(5, false);
-    man(6, false);
-    man(7, false);
+    player(playerLocation, false);
+    player(5, false);
+    player(6, false);
+    player(7, false);
+
     octopus(1, 0, true);
     octopus(1, 1, true);
     octopus(1, 2, false);
@@ -404,6 +415,7 @@ void capture() {
     isBlack = false;
     fillRect(109, 0, 19, 9);
     isBlack = true;
+
     // putCell(octfoot25,50,50);
     putCell(ManHHead92, 64, 22);
     putCell(ManHMTe93, 60, 26);  //実際は触手
@@ -415,53 +427,55 @@ void capture() {
 }
 
 void gameOver() {
-    tone(18, 740, 200);
+    const int audiopin = 18;
+
+    tone(audiopin, 740, 200);
     delay(110);
-    noTone(18);
-    tone(18, 698, 200);
+    noTone(audiopin);
+    tone(audiopin, 698, 200);
     delay(110);
-    noTone(18);
-    tone(18, 622, 200);
+    noTone(audiopin);
+    tone(audiopin, 622, 200);
     delay(110);
-    noTone(18);
-    tone(18, 554, 200);
+    noTone(audiopin);
+    tone(audiopin, 554, 200);
     delay(110);
-    noTone(18);
-    tone(18, 622, 200);
+    noTone(audiopin);
+    tone(audiopin, 622, 200);
     delay(110);
-    noTone(18);
-    tone(18, 466, 200);
+    noTone(audiopin);
+    tone(audiopin, 466, 200);
     delay(110);
-    noTone(18);
-    tone(18, 523, 200);
+    noTone(audiopin);
+    tone(audiopin, 523, 200);
     delay(110);
-    noTone(18);
+    noTone(audiopin);
     delay(80);
-    tone(18, 415, 200);
+    tone(audiopin, 415, 200);
     delay(110);
-    noTone(18);
+    noTone(audiopin);
     delay(80);
-    tone(18, 311, 200);
+    tone(audiopin, 311, 200);
     delay(110);
-    noTone(18);
-    tone(18, 349, 200);
+    noTone(audiopin);
+    tone(audiopin, 349, 200);
     delay(110);
-    noTone(18);
-    tone(18, 370, 200);
+    noTone(audiopin);
+    tone(audiopin, 370, 200);
     delay(110);
-    noTone(18);
+    noTone(audiopin);
     delay(110);
-    tone(18, 349, 200);
+    tone(audiopin, 349, 200);
     delay(110);
-    noTone(18);
+    noTone(audiopin);
     delay(110);
-    tone(18, 277, 200);
+    tone(audiopin, 277, 200);
     delay(110);
-    noTone(18);
+    noTone(audiopin);
     delay(110);
-    tone(18, 311, 280);
+    tone(audiopin, 311, 280);
     delay(1470);
-    noTone(18);
+    noTone(audiopin);
     delay(90);
 }
 
@@ -499,14 +513,17 @@ void struggle(bool color) {
     // else Serial.println("Captured!!!");
 }
 
-int count = 0,
-    situation = 0,  ///左右のボタンの押下状況
-    nishioCount = 0,  ///最左で右を押したときに手を動かすためのカウント
-    nishiokaNum = 0,    ///
-    interval = 800,     ///足の動く間隔(ms)
-    man4interval = 80;  /// PCが最左にいるときの
+int count = 0;
+int situation = 0;  ///左右のボタンの押下状況
+int nishioCount = 0;  ///最左で右を押したときに手を動かすためのカウント
+int nishiokaNum = 0;    ///
+int interval = 800;     ///足の動く間隔(ms)
+int man4interval = 80;  /// PCが最左にいるときの
 unsigned long time;
-bool mandilect = true, isCaptured = false, isCatching = false, isGO = false;
+bool mandilect = true;
+bool isCaptured = false;
+bool isCatching = false;
+bool isGameOver = false;
 char scoreStr[4];
 
 void setup() {
@@ -532,7 +549,7 @@ void setup() {
     isBlack = true;
 
     // initOctopus(true);
-    man(manLocate, true);
+    player(playerLocation, true);
     count = 1;
     display();
 
@@ -562,18 +579,20 @@ void loop() {
         digitalWrite(LED_BUILTIN, HIGH);
     }
     if (isCaptured) {
-        if (!isGO) {
+        if (!isGameOver) {
             gameOver();
-            isGO = true;
+            isGameOver = true;
         }
         if (time / interval != count) {
             struggle(count % 2);
             count = time / interval;
         }
     } else {
-        if ((footlocate[manLocate - 1] == footlocateMax[manLocate - 1]) ||
-            (manLocate > 4 &&
-             footlocate[3] == 1)) {  // footlocateの添字0にあたるのはmanLocate=1
+        if ((footlocate[playerLocation - 1] ==
+             footlocateMax[playerLocation - 1]) ||
+            (playerLocation > 4 &&
+             footlocate[3] ==
+                 1)) {  // footlocateの添字0にあたるのはplayerLocation=1
             // fillRect(4,57,1*count,4);
             capture();
             putStr("GAME OVER", 50, 50);
@@ -581,19 +600,19 @@ void loop() {
         }
         if (nishioCount >= 1 && time / man4interval != nishiokaNum) {
             if (nishioCount == 1) {
-                man(6, false);
-                man(5, true);
+                player(6, false);
+                player(5, true);
                 nishioCount++;
                 nishiokaNum = millis() / man4interval;
             } else if (nishioCount == 2) {
-                man(5, false);
-                man(7, true);
+                player(5, false);
+                player(7, true);
                 score++;
                 nishioCount++;
                 nishiokaNum = millis() / man4interval;
             } else if (nishioCount == 3) {
-                man(5, true);
-                man(7, false);
+                player(5, true);
+                player(7, false);
                 nishioCount = 0;
                 tone(18, 784, 30);
                 delay(100);
@@ -603,9 +622,9 @@ void loop() {
 
         } else if (!digitalRead(17) && nishioCount == 0) {
             if (situation == 0) {
-                if (manLocate == 4) {
-                    man(5, false);
-                    man(6, true);
+                if (playerLocation == 4) {
+                    player(5, false);
+                    player(6, true);
                     nishioCount = 1;
                     nishiokaNum = millis() / man4interval;
                 } else {
@@ -630,7 +649,7 @@ void loop() {
                 moveOct(3);
             }
             /*movePlayer(mandilect);
-              if(manLocate==0||manLocate==7) mandilect=!mandilect;*/
+              if(playerLocation==0||playerLocation==7) mandilect=!mandilect;*/
             count = time / interval;
         }
     }
