@@ -10,9 +10,7 @@
 #include "player.h"
 
 bool isBlack;
-bool isExtend[] = {false, false, false, false};
 
-unsigned int score = 0;
 unsigned int playerLocation = 0;  // location of the player from 0 to 4
 
 void octopus(int i, int j, bool isisBlack) {
@@ -116,6 +114,8 @@ void _random() {
         footlocate[i] = OF[i];
     }
 }
+
+bool isExtend[] = {false, false, false, false};
 
 void moveOct(int i) {
     int temp;
@@ -322,18 +322,15 @@ void struggle(bool color) {
     // else Serial.println("Captured!!!");
 }
 
-int count = 0;
+unsigned int score = 0;
+unsigned int count = 0;
 int situation = 0;  ///左右のボタンの押下状況
 int nishioCount = 0;  ///最左で右を押したときに手を動かすためのカウント
-int nishiokaNum = 0;    ///
-int interval = 800;     ///足の動く間隔(ms)
-int man4interval = 80;  /// PCが最左にいるときの
-unsigned long time;
+int nishiokaNum = 0;
 bool mandilect = true;
 bool isCaptured = false;
 bool isCatching = false;
 bool isGameOver = false;
-char scoreStr[4];
 
 void setup() {
     initGlcd();
@@ -369,11 +366,22 @@ void setup() {
 }
 
 void loop() {
-    interval = 800 - score * 10;
-    time = millis();
+    // an interval (ms) of player hand movement to get treasure
+    const int playerHandInterval = 80;
+
+    // an interval (ms) between legs movement of the octopus
+    // the higher score, the shorter the interval
+    const int octoLegsInterval = 800 - score * 10;
+
+    // number of milliseconds of running
+    unsigned long time = millis();
+
+    // string that contains formatted score
+    // if score > 999, it will overflow
+    char scoreStr[4];
     snprintf(scoreStr, 4, "%03d", score);
 
-    // Serial.println(time / interval);
+    // Serial.println(time / octoLegsInterval);
     isBlack = false;
     fillRect(109, 0, 19, 9);
     isBlack = true;
@@ -391,9 +399,9 @@ void loop() {
             gameOver();
             isGameOver = true;
         }
-        if (time / interval != count) {
+        if (time / octoLegsInterval != count) {
             struggle(count % 2);
-            count = time / interval;
+            count = time / octoLegsInterval;
         }
     } else {
         if ((footlocate[playerLocation - 1] ==
@@ -406,18 +414,18 @@ void loop() {
             putStr("GAME OVER", 50, 50);
             isCaptured = true;
         }
-        if (nishioCount >= 1 && time / man4interval != nishiokaNum) {
+        if (nishioCount >= 1 && time / playerHandInterval != nishiokaNum) {
             if (nishioCount == 1) {
                 player(6, false);
                 player(5, true);
                 nishioCount++;
-                nishiokaNum = millis() / man4interval;
+                nishiokaNum = millis() / playerHandInterval;
             } else if (nishioCount == 2) {
                 player(5, false);
                 player(7, true);
                 score++;
                 nishioCount++;
-                nishiokaNum = millis() / man4interval;
+                nishiokaNum = millis() / playerHandInterval;
             } else if (nishioCount == 3) {
                 player(5, true);
                 player(7, false);
@@ -434,7 +442,7 @@ void loop() {
                     player(5, false);
                     player(6, true);
                     nishioCount = 1;
-                    nishiokaNum = millis() / man4interval;
+                    nishiokaNum = millis() / playerHandInterval;
                 } else {
                     movePlayer(true);
                 }
@@ -448,7 +456,7 @@ void loop() {
             situation = 0;
         }
 
-        if (time / interval != count) {
+        if (time / octoLegsInterval != count) {
             if (count % 2) {
                 moveOct(0);
                 moveOct(2);
@@ -458,7 +466,7 @@ void loop() {
             }
             /*movePlayer(mandilect);
               if(playerLocation==0||playerLocation==7) mandilect=!mandilect;*/
-            count = time / interval;
+            count = time / octoLegsInterval;
         }
     }
 
