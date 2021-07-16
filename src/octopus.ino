@@ -105,19 +105,9 @@ void initOctopus(bool temp) {
 const int footlocateMax[] = {3, 4, 3, 1};
 int footlocate[] = {0, 0, 0, 0};
 
-void _random() {
-    long OF[4] = {random(4), random(5), random(4), 1};
-    for (size_t i = 0; i <= 3; i++) {
-        for (size_t j = 0; j <= OF[i]; j++) {
-            octopus(i, j, true);
-        }
-        footlocate[i] = OF[i];
-    }
-}
-
 bool isExtend[] = {false, false, false, false};
 
-void moveOct(int i) {
+void moveOctopus(int i) {
     int temp;
     switch (i) {
         case 0:
@@ -332,6 +322,18 @@ bool isCaptured = false;
 bool isCatching = false;
 bool isGameOver = false;
 
+// setupOctoLegs: decide how long each leg of the octopus is at random
+// this writes on octoLegsLcation
+void setupOctopusLegs() {
+    long randomLocations[] = {random(4), random(5), random(4), 1};
+    for (size_t i = 0; i <= 3; i++) {
+        for (size_t j = 0; j <= randomLocations[i]; j++) {
+            octopus(i, j, true);
+        }
+        footlocate[i] = randomLocations[i];
+    }
+}
+
 void setup() {
     initGlcd();
     pinMode(16, INPUT);
@@ -358,7 +360,7 @@ void setup() {
     count = 1;
     display();
 
-    _random();
+    setupOctopusLegs();
     tone(18, 784, 30);
     delay(100);
     noTone(18);
@@ -458,11 +460,11 @@ void loop() {
 
         if (time / octoLegsInterval != count) {
             if (count % 2) {
-                moveOct(0);
-                moveOct(2);
+                moveOctopus(0);
+                moveOctopus(2);
             } else {
-                moveOct(1);
-                moveOct(3);
+                moveOctopus(1);
+                moveOctopus(3);
             }
             /*movePlayer(mandilect);
               if(playerLocation==0||playerLocation==7) mandilect=!mandilect;*/
