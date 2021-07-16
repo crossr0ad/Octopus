@@ -4,85 +4,16 @@
 
 #include "background.h"
 #include "font.h"
+#include "glcd.h"
 #include "octopus_body.h"
 #include "octopus_legs.h"
 #include "player.h"
-
-#define pins_RS 10
-#define pins_RW 9
-#define pins_E 8
-#define pins_CS1 11
-#define pins_CS2 12
-#define pins_RST 13
-
-const byte pins_DB[] = {14, 15, 2, 3, 4, 5, 6, 7};
 
 bool isBlack;
 bool isExtend[] = {false, false, false, false};
 
 unsigned int score = 0;
 unsigned int playerLocation = 0;  // location of the player from 0 to 4
-
-void selectChip(boolean cs) {
-    if (cs == 0) {
-        digitalWrite(pins_CS1, HIGH);
-        digitalWrite(pins_CS2, LOW);
-    } else {
-        digitalWrite(pins_CS1, LOW);
-        digitalWrite(pins_CS2, HIGH);
-    }
-}
-
-void writeBUS(boolean rs, /*boolean rw,*/ byte dat) {
-    digitalWrite(pins_RS, rs);
-    for (size_t i = 0; i < 8; i++) {  //
-        digitalWrite(pins_DB[i], (dat >> i) & 0x01);
-    }
-    digitalWrite(pins_E, HIGH);
-    digitalWrite(pins_E, LOW);
-}
-
-void writeCommand(byte dat) { writeBUS(0, dat); }
-
-void writeData(byte dat) { writeBUS(1, dat); }
-
-void setAddress(byte col, byte row) {
-    writeBUS(0, 0x40 | (col & 0x3F));
-    writeBUS(0, 0xB8 | (row & 0x07));
-}
-
-// initialize glaphic LCD (GLCD)
-void initGlcd(void) {
-    pinMode(pins_RS, OUTPUT);
-    pinMode(pins_RW, OUTPUT);
-    pinMode(pins_E, OUTPUT);
-    pinMode(pins_CS1, OUTPUT);
-    pinMode(pins_CS2, OUTPUT);
-    pinMode(pins_RST, OUTPUT);
-    for (size_t i = 0; i < 8; i++) {
-        pinMode(pins_DB[i], OUTPUT);
-    }
-    delay(30);
-    selectChip(0);
-    writeCommand(0xC0);  // 1100 0000
-    writeCommand(0x3F);  // 0011 1111
-    selectChip(1);
-    writeCommand(0xC0);  // 1100 0000
-    writeCommand(0x3F);  // 0011 1111
-}
-
-void glcdCLS() {
-    for (size_t i = 0; i < 2; i++) {
-        selectChip(i);
-        for (size_t row = 0; row < 8; row++) {
-            setAddress(0, row);
-            for (size_t col = 0; col < 64; col++) {
-                writeData(0);
-            }
-        }
-    }
-    setAddress(0, 0);
-}
 
 unsigned char buff[8][128] = {0};
 
@@ -96,24 +27,6 @@ void dot(int x, int y) {
         buff[c_x][x] |= c_z;
     } else {
         buff[c_x][x] &= ~c_z;
-    }
-}
-
-// send the buffer to display
-void display() {
-    selectChip(0);
-    for (size_t i = 0; i < 8; i++) {
-        setAddress(0, i);
-        for (size_t j = 0; j < 64; j++) {
-            writeData((byte)buff[i][j]);
-        }
-    }
-    selectChip(1);
-    for (size_t i = 0; i < 8; i++) {
-        setAddress(0, i);
-        for (size_t j = 64; j < 128; j++) {
-            writeData((byte)buff[i][j]);
-        }
     }
 }
 
