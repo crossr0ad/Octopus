@@ -3,7 +3,7 @@
 #include <stdlib.h>
 
 #include "background.h"
-#include "font.h"
+#include "buff.h"
 #include "glcd.h"
 #include "octopus_body.h"
 #include "octopus_legs.h"
@@ -14,99 +14,6 @@ bool isExtend[] = {false, false, false, false};
 
 unsigned int score = 0;
 unsigned int playerLocation = 0;  // location of the player from 0 to 4
-
-unsigned char buff[8][128] = {0};
-
-// dot: put a dot on a display
-void dot(int x, int y) {
-    if (x > 127 || x < 0 || y > 63 || y < 0) return;
-    int c_x = y / 8;
-    int c_z = 0x01 << (y % 8);
-
-    if (isBlack) {
-        buff[c_x][x] |= c_z;
-    } else {
-        buff[c_x][x] &= ~c_z;
-    }
-}
-
-// line: draw a straight line
-void line(int x, int y, int len, bool sv) {  /// sv=1…よこ,0…たて
-    if (sv) {
-        for (size_t i = 0; i < len; i++) {
-            dot(x + i, y);
-        }
-    } else {
-        for (size_t i = 0; i < len; i++) {
-            dot(x, y + i);
-        }
-    }
-}
-
-// rect: draw a rectangle
-void rect(int x, int y, int width, int height) {
-    line(x, y, width, 1);
-    line(x, y, height, 0);
-    line(x, y + height, width, 1);
-    line(x + width, y, height, 0);
-    dot(x + width, y + height);
-}
-
-// fillRect: draw a filled rectangle
-void fillRect(int x, int y, int width, int height) {
-    for (size_t i = 0; i < width; i++) {
-        for (size_t j = 0; j < height; j++) {
-            dot(x + i, y + j);
-        }
-    }
-}
-
-// putCell: takes array of various type as input and write it to buffer
-#define putCell(img, x, y)                           \
-    {                                                \
-        int height = sizeof(img[0]) * 8;             \
-        int width = sizeof(img) / (height / 8);      \
-                                                     \
-        if (height == 8) {                           \
-            uint8_t ln;                              \
-            for (size_t i = 0; i < width; i++) {     \
-                ln = pgm_read_byte_near(&(img[i]));  \
-                for (size_t j = 0; j < 8; j++) {     \
-                    if (ln & (1 << j)) {             \
-                        dot(x + i, y + j);           \
-                    }                                \
-                }                                    \
-            }                                        \
-        } else if (height == 16) {                   \
-            uint16_t ln;                             \
-            for (size_t i = 0; i < width; i++) {     \
-                ln = pgm_read_word_near(&(img[i]));  \
-                for (size_t j = 0; j < 16; j++) {    \
-                    if (ln & (((uint16_t)1) << j)) { \
-                        dot(x + i, y + j);           \
-                    }                                \
-                }                                    \
-            }                                        \
-        } else if (height == 32) {                   \
-            uint32_t ln;                             \
-            for (size_t i = 0; i < width; i++) {     \
-                ln = pgm_read_dword_near(&(img[i])); \
-                for (size_t j = 0; j < 32; j++) {    \
-                    if (ln & (((uint32_t)1) << j)) { \
-                        dot(x + i, y + j);           \
-                    }                                \
-                }                                    \
-            }                                        \
-        }                                            \
-    }
-
-void putChar(int ch, int x, int y) { putCell(Font[ch - ' '], x, y); }
-
-void putStr(char ch[], int x, int y) {
-    for (size_t i = 0; ch[i] != '\0'; i++) {
-        putChar(ch[i], x + i * 6, y);
-    }
-}
 
 void octopus(int i, int j, bool isisBlack) {
     bool temp = isBlack;
