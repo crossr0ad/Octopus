@@ -3,207 +3,17 @@
 #include <stdlib.h>
 
 #include "background.h"
-#include "font.h"
+#include "buff.h"
+#include "glcd.h"
 #include "octopus_body.h"
 #include "octopus_legs.h"
 #include "player.h"
-
-#define pins_RS 10
-#define pins_RW 9
-#define pins_E 8
-#define pins_CS1 11
-#define pins_CS2 12
-#define pins_RST 13
-
-const byte pins_DB[] = {14, 15, 2, 3, 4, 5, 6, 7};
 
 bool isBlack;
 bool isExtend[] = {false, false, false, false};
 
 unsigned int score = 0;
 unsigned int playerLocation = 0;  // location of the player from 0 to 4
-
-void selectChip(boolean cs) {
-    if (cs == 0) {
-        digitalWrite(pins_CS1, HIGH);
-        digitalWrite(pins_CS2, LOW);
-    } else {
-        digitalWrite(pins_CS1, LOW);
-        digitalWrite(pins_CS2, HIGH);
-    }
-}
-
-void writeBUS(boolean rs, /*boolean rw,*/ byte dat) {
-    digitalWrite(pins_RS, rs);
-    for (int i = 0; i < 8; i++) {  //
-        digitalWrite(pins_DB[i], (dat >> i) & 0x01);
-    }
-    digitalWrite(pins_E, HIGH);
-    digitalWrite(pins_E, LOW);
-}
-
-void writeCommand(byte dat) { writeBUS(0, dat); }
-
-void writeData(byte dat) { writeBUS(1, dat); }
-
-void setAddress(byte col, byte row) {
-    writeBUS(0, 0x40 | (col & 0x3F));
-    writeBUS(0, 0xB8 | (row & 0x07));
-}
-
-// initialize glaphic LCD (GLCD)
-void initGlcd(void) {
-    pinMode(pins_RS, OUTPUT);
-    pinMode(pins_RW, OUTPUT);
-    pinMode(pins_E, OUTPUT);
-    pinMode(pins_CS1, OUTPUT);
-    pinMode(pins_CS2, OUTPUT);
-    pinMode(pins_RST, OUTPUT);
-    for (int i = 0; i < 8; i++) {
-        pinMode(pins_DB[i], OUTPUT);
-    }
-    delay(30);
-    selectChip(0);
-    writeCommand(0xC0);  // 1100 0000
-    writeCommand(0x3F);  // 0011 1111
-    selectChip(1);
-    writeCommand(0xC0);  // 1100 0000
-    writeCommand(0x3F);  // 0011 1111
-}
-
-void glcdCLS() {
-    byte col, row, i;
-    for (i = 0; i < 2; i++) {
-        selectChip(i);
-        for (row = 0; row < 8; row++) {
-            setAddress(0, row);
-            for (col = 0; col < 64; col++) {
-                writeData(0);
-            }
-        }
-    }
-    setAddress(0, 0);
-}
-
-unsigned char buff[8][128];
-
-// initBuffer: initilize buffer to zero
-void initBuffer() {
-    for (int r = 0; r < 8; r++) {
-        for (int c = 0; c < 128; c++) {
-            buff[r][c] = 0;
-        }
-    }
-}
-
-// dot: put a dot on a display
-void dot(int x, int y) {
-    if (x > 127 || x < 0 || y > 63 || y < 0) return;
-    int c_x = y / 8;
-    int c_z = 0x01 << (y % 8);
-
-    if (isBlack) {
-        buff[c_x][x] |= c_z;
-    } else {
-        buff[c_x][x] &= ~c_z;
-    }
-}
-
-// send the buffer to display
-void display() {
-    selectChip(0);
-    for (int i = 0; i < 8; i++) {
-        setAddress(0, i);
-        for (int j = 0; j < 64; j++) {
-            writeData((byte)buff[i][j]);
-        }
-    }
-    selectChip(1);
-    for (int i = 0; i < 8; i++) {
-        setAddress(0, i);
-        for (int j = 64; j < 128; j++) {
-            writeData((byte)buff[i][j]);
-        }
-    }
-}
-
-// line: draw a straight line
-void line(int x, int y, int len, bool sv) {  /// sv=1…よこ,0…たて
-    if (sv) {
-        for (int i = 0; i < len; i++) {
-            dot(x + i, y);
-        }
-    } else {
-        for (int i = 0; i < len; i++) {
-            dot(x, y + i);
-        }
-    }
-}
-
-// rect: draw a rectangle
-void rect(int x, int y, int width, int height) {
-    line(x, y, width, 1);
-    line(x, y, height, 0);
-    line(x, y + height, width, 1);
-    line(x + width, y, height, 0);
-    dot(x + width, y + height);
-}
-
-// fillRect: draw a filled rectangle
-void fillRect(int x, int y, int width, int height) {
-    for (int i = 0; i < width; i++) {
-        for (int j = 0; j < height; j++) {
-            dot(x + i, y + j);
-        }
-    }
-}
-
-// putCell: takes array of various type as input and write it to buffer
-#define putCell(img, x, y)                           \
-    {                                                \
-        int height = sizeof(img[0]) * 8;             \
-        int width = sizeof(img) / (height / 8);      \
-                                                     \
-        if (height == 8) {                           \
-            uint8_t ln;                              \
-            for (int i = 0; i < width; i++) {        \
-                ln = pgm_read_byte_near(&(img[i]));  \
-                for (int j = 0; j < 8; j++) {        \
-                    if (ln & (1 << j)) {             \
-                        dot(x + i, y + j);           \
-                    }                                \
-                }                                    \
-            }                                        \
-        } else if (height == 16) {                   \
-            uint16_t ln;                             \
-            for (int i = 0; i < width; i++) {        \
-                ln = pgm_read_word_near(&(img[i]));  \
-                for (int j = 0; j < 16; j++) {       \
-                    if (ln & (((uint16_t)1) << j)) { \
-                        dot(x + i, y + j);           \
-                    }                                \
-                }                                    \
-            }                                        \
-        } else if (height == 32) {                   \
-            uint32_t ln;                             \
-            for (int i = 0; i < width; i++) {        \
-                ln = pgm_read_dword_near(&(img[i])); \
-                for (int j = 0; j < 32; j++) {       \
-                    if (ln & (((uint32_t)1) << j)) { \
-                        dot(x + i, y + j);           \
-                    }                                \
-                }                                    \
-            }                                        \
-        }                                            \
-    }
-
-void putChar(int ch, int x, int y) { putCell(Font[ch - ' '], x, y); }
-
-void putStr(char ch[], int x, int y) {
-    for (int i = 0; ch[i] != '\0'; i++) {
-        putChar(ch[i], x + i * 6, y);
-    }
-}
 
 void octopus(int i, int j, bool isisBlack) {
     bool temp = isBlack;
@@ -287,9 +97,9 @@ void octopus(int i, int j, bool isisBlack) {
 }
 
 void initOctopus(bool temp) {
-    for (int j = 0; j < 4; j++) {
-        for (int k = 0; k < 5; k++) {
-            octopus(j, k, temp);
+    for (size_t i = 0; i < 4; i++) {
+        for (size_t j = 0; j < 5; j++) {
+            octopus(i, j, temp);
         }
     }
 }
@@ -298,10 +108,9 @@ const int footlocateMax[] = {3, 4, 3, 1};
 int footlocate[] = {0, 0, 0, 0};
 
 void _random() {
-    int i, j;
     long OF[4] = {random(4), random(5), random(4), 1};
-    for (i = 0; i <= 3; i++) {
-        for (j = 0; j <= OF[i]; j++) {
+    for (size_t i = 0; i <= 3; i++) {
+        for (size_t j = 0; j <= OF[i]; j++) {
             octopus(i, j, true);
         }
         footlocate[i] = OF[i];
@@ -412,7 +221,6 @@ void capture() {
     octopus(2, 1, true);
     octopus(2, 2, false);
     octopus(2, 3, false);
-
     isBlack = false;
     fillRect(109, 0, 19, 9);
     isBlack = true;
@@ -529,7 +337,6 @@ char scoreStr[4];
 
 void setup() {
     initGlcd();
-    glcdCLS();
     pinMode(16, INPUT);
     pinMode(17, INPUT);
     pinMode(LED_BUILTIN, OUTPUT);
