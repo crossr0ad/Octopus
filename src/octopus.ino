@@ -337,13 +337,13 @@ char scoreStr[4];
 
 void setup() {
     initGlcd();
-    glcdCLS();
     pinMode(16, INPUT);
     pinMode(17, INPUT);
     pinMode(LED_BUILTIN, OUTPUT);
     Serial.begin(9600);
     randomSeed(analogRead(4));
 
+    initBuffer();
     isBlack = true;
     // putStr("hello, Nishioka!",10,10);
     putCell(octbodyU, 50, -5);
