@@ -35,7 +35,7 @@ void selectChip(boolean cs) {
 
 void writeBUS(boolean rs, /*boolean rw,*/ byte dat) {
     digitalWrite(pins_RS, rs);
-    for (int i = 0; i < 8; i++) {  //
+    for (size_t i = 0; i < 8; i++) {  //
         digitalWrite(pins_DB[i], (dat >> i) & 0x01);
     }
     digitalWrite(pins_E, HIGH);
@@ -59,7 +59,7 @@ void initGlcd(void) {
     pinMode(pins_CS1, OUTPUT);
     pinMode(pins_CS2, OUTPUT);
     pinMode(pins_RST, OUTPUT);
-    for (int i = 0; i < 8; i++) {
+    for (size_t i = 0; i < 8; i++) {
         pinMode(pins_DB[i], OUTPUT);
     }
     delay(30);
@@ -72,12 +72,11 @@ void initGlcd(void) {
 }
 
 void glcdCLS() {
-    byte col, row, i;
-    for (i = 0; i < 2; i++) {
+    for (size_t i = 0; i < 2; i++) {
         selectChip(i);
-        for (row = 0; row < 8; row++) {
+        for (size_t row = 0; row < 8; row++) {
             setAddress(0, row);
-            for (col = 0; col < 64; col++) {
+            for (size_t col = 0; col < 64; col++) {
                 writeData(0);
             }
         }
@@ -103,16 +102,16 @@ void dot(int x, int y) {
 // send the buffer to display
 void display() {
     selectChip(0);
-    for (int i = 0; i < 8; i++) {
+    for (size_t i = 0; i < 8; i++) {
         setAddress(0, i);
-        for (int j = 0; j < 64; j++) {
+        for (size_t j = 0; j < 64; j++) {
             writeData((byte)buff[i][j]);
         }
     }
     selectChip(1);
-    for (int i = 0; i < 8; i++) {
+    for (size_t i = 0; i < 8; i++) {
         setAddress(0, i);
-        for (int j = 64; j < 128; j++) {
+        for (size_t j = 64; j < 128; j++) {
             writeData((byte)buff[i][j]);
         }
     }
@@ -121,11 +120,11 @@ void display() {
 // line: draw a straight line
 void line(int x, int y, int len, bool sv) {  /// sv=1…よこ,0…たて
     if (sv) {
-        for (int i = 0; i < len; i++) {
+        for (size_t i = 0; i < len; i++) {
             dot(x + i, y);
         }
     } else {
-        for (int i = 0; i < len; i++) {
+        for (size_t i = 0; i < len; i++) {
             dot(x, y + i);
         }
     }
@@ -142,8 +141,8 @@ void rect(int x, int y, int width, int height) {
 
 // fillRect: draw a filled rectangle
 void fillRect(int x, int y, int width, int height) {
-    for (int i = 0; i < width; i++) {
-        for (int j = 0; j < height; j++) {
+    for (size_t i = 0; i < width; i++) {
+        for (size_t j = 0; j < height; j++) {
             dot(x + i, y + j);
         }
     }
@@ -157,9 +156,9 @@ void fillRect(int x, int y, int width, int height) {
                                                      \
         if (height == 8) {                           \
             uint8_t ln;                              \
-            for (int i = 0; i < width; i++) {        \
+            for (size_t i = 0; i < width; i++) {     \
                 ln = pgm_read_byte_near(&(img[i]));  \
-                for (int j = 0; j < 8; j++) {        \
+                for (size_t j = 0; j < 8; j++) {     \
                     if (ln & (1 << j)) {             \
                         dot(x + i, y + j);           \
                     }                                \
@@ -167,9 +166,9 @@ void fillRect(int x, int y, int width, int height) {
             }                                        \
         } else if (height == 16) {                   \
             uint16_t ln;                             \
-            for (int i = 0; i < width; i++) {        \
+            for (size_t i = 0; i < width; i++) {     \
                 ln = pgm_read_word_near(&(img[i]));  \
-                for (int j = 0; j < 16; j++) {       \
+                for (size_t j = 0; j < 16; j++) {    \
                     if (ln & (((uint16_t)1) << j)) { \
                         dot(x + i, y + j);           \
                     }                                \
@@ -177,9 +176,9 @@ void fillRect(int x, int y, int width, int height) {
             }                                        \
         } else if (height == 32) {                   \
             uint32_t ln;                             \
-            for (int i = 0; i < width; i++) {        \
+            for (size_t i = 0; i < width; i++) {     \
                 ln = pgm_read_dword_near(&(img[i])); \
-                for (int j = 0; j < 32; j++) {       \
+                for (size_t j = 0; j < 32; j++) {    \
                     if (ln & (((uint32_t)1) << j)) { \
                         dot(x + i, y + j);           \
                     }                                \
@@ -191,7 +190,7 @@ void fillRect(int x, int y, int width, int height) {
 void putChar(int ch, int x, int y) { putCell(Font[ch - ' '], x, y); }
 
 void putStr(char ch[], int x, int y) {
-    for (int i = 0; ch[i] != '\0'; i++) {
+    for (size_t i = 0; ch[i] != '\0'; i++) {
         putChar(ch[i], x + i * 6, y);
     }
 }
@@ -278,9 +277,9 @@ void octopus(int i, int j, bool isisBlack) {
 }
 
 void initOctopus(bool temp) {
-    for (int j = 0; j < 4; j++) {
-        for (int k = 0; k < 5; k++) {
-            octopus(j, k, temp);
+    for (size_t i = 0; i < 4; i++) {
+        for (size_t j = 0; j < 5; j++) {
+            octopus(i, j, temp);
         }
     }
 }
@@ -289,10 +288,9 @@ const int footlocateMax[] = {3, 4, 3, 1};
 int footlocate[] = {0, 0, 0, 0};
 
 void _random() {
-    int i, j;
     long OF[4] = {random(4), random(5), random(4), 1};
-    for (i = 0; i <= 3; i++) {
-        for (j = 0; j <= OF[i]; j++) {
+    for (size_t i = 0; i <= 3; i++) {
+        for (size_t j = 0; j <= OF[i]; j++) {
             octopus(i, j, true);
         }
         footlocate[i] = OF[i];
